@@ -255,18 +255,44 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
   min-height: 0;
 }
 .board-scroll {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-bottom: 6px;
 }
 .board {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 230px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   align-items: start;
-  min-width: max-content;
 }
-.round-col {
+.lane-col {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.lane-head {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.lane-head.winners {
+  box-shadow: inset 0 0 0 1px rgba(26,111,232,0.18);
+}
+.lane-head.losers {
+  box-shadow: inset 0 0 0 1px rgba(232,51,42,0.18);
+}
+.lane-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+}
+.lane-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.round-stack {
   display: grid;
   gap: 8px;
 }
@@ -361,6 +387,11 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
 }
 .match-btn:disabled {
   opacity: 0.45;
+}
+.finals-block {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
 }
 .recent-list, .archive-list {
   display: grid;
@@ -540,8 +571,18 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
     -webkit-overflow-scrolling: touch;
   }
   .board {
-    grid-auto-columns: 186px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
+  }
+  .lane-head,
+  .round-head {
+    padding: 8px 9px;
+  }
+  .lane-title {
+    font-size: 12px;
+  }
+  .lane-sub {
+    font-size: 10px;
   }
   .round-head,
   .match-card {
@@ -557,6 +598,7 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
   .slot-score,
   .match-meta,
   .round-sub,
+  .round-title,
   .match-label,
   .match-state {
     font-size: 10px;
@@ -1397,9 +1439,8 @@ Team 4</textarea>
       return;
     }
 
-    const cols = [];
     const renderRoundColumn = (ids, title, sub) => `
-      <div class="round-col">
+      <div class="round-stack">
         <div class="round-head">
           <div class="round-title">${escapeHtml(title)}</div>
           <div class="round-sub">${escapeHtml(sub)}</div>
@@ -1408,18 +1449,38 @@ Team 4</textarea>
       </div>
     `;
 
-    tournament.order.winners.forEach((ids, index) => {
-      cols.push(renderRoundColumn(ids, 'Winners R' + (index + 1), ids.length + ' matches'));
-    });
-    tournament.order.losers.forEach((ids, index) => {
-      cols.push(renderRoundColumn(ids, 'Losers R' + (index + 1), ids.length + ' matches'));
-    });
-    cols.push(renderRoundColumn(['F1'], 'Grand Final', 'First final'));
-    if (getMatch(tournament, 'F2')?.enabled) {
-      cols.push(renderRoundColumn(['F2'], 'Reset Final', 'If necessary'));
-    }
+    const winnersHtml = tournament.order.winners.map((ids, index) =>
+      renderRoundColumn(ids, 'Winners R' + (index + 1), ids.length + ' matches')
+    ).join('');
 
-    els.board.innerHTML = cols.join('');
+    const losersHtml = tournament.order.losers.map((ids, index) =>
+      renderRoundColumn(ids, 'Losers R' + (index + 1), ids.length + ' matches')
+    ).join('');
+
+    const finalsHtml = [
+      renderRoundColumn(['F1'], 'Grand Final', 'First final'),
+      getMatch(tournament, 'F2')?.enabled ? renderRoundColumn(['F2'], 'Reset Final', 'If necessary') : ''
+    ].join('');
+
+    els.board.innerHTML = `
+      <div class="lane-col">
+        <div class="lane-head winners">
+          <div class="lane-title">Winners Bracket</div>
+          <div class="lane-sub">Advances build downward</div>
+        </div>
+        ${winnersHtml}
+      </div>
+      <div class="lane-col">
+        <div class="lane-head losers">
+          <div class="lane-title">Losers Bracket</div>
+          <div class="lane-sub">One loss sends teams here</div>
+        </div>
+        ${losersHtml}
+      </div>
+      <div class="finals-block">
+        ${finalsHtml}
+      </div>
+    `;
   }
 
   function renderRecentResults() {
