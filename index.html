@@ -1219,6 +1219,43 @@ Team 4</textarea>
     return { wins, losses };
   }
 
+  function buildRecordTimeline(tournament) {
+    const current = {};
+    const beforeByMatch = {};
+    const afterByMatch = {};
+
+    function snapshotFor(entrantId) {
+      return { ...(current[entrantId] || { wins: 0, losses: 0 }) };
+    }
+
+    for (const item of (tournament.history || [])) {
+      if (item.auto) continue;
+      const match = getMatch(tournament, item.matchId);
+      if (!match) continue;
+
+      const participantA = match.participantA;
+      const participantB = match.participantB;
+      beforeByMatch[match.id] = {};
+      if (participantA) beforeByMatch[match.id][participantA] = snapshotFor(participantA);
+      if (participantB) beforeByMatch[match.id][participantB] = snapshotFor(participantB);
+
+      if (match.winnerId) {
+        current[match.winnerId] = current[match.winnerId] || { wins: 0, losses: 0 };
+        current[match.winnerId].wins += 1;
+      }
+      if (match.loserId) {
+        current[match.loserId] = current[match.loserId] || { wins: 0, losses: 0 };
+        current[match.loserId].losses += 1;
+      }
+
+      afterByMatch[match.id] = {};
+      if (participantA) afterByMatch[match.id][participantA] = snapshotFor(participantA);
+      if (participantB) afterByMatch[match.id][participantB] = snapshotFor(participantB);
+    }
+
+    return { beforeByMatch, afterByMatch, current };
+  }
+
   function getCompletedWinners(tournament, matchIds) {
     return (matchIds || [])
       .map((matchId) => getMatch(tournament, matchId))
@@ -1605,7 +1642,7 @@ Team 4</textarea>
     });
   }
 
-  function renderMatchCard(match) {
+  function renderMatchCard(match, recordTimeline) {
     if (!match || !match.enabled) return '';
     if (match.complete && match.autoAdvanced && !match.participantA && !match.participantB) return '';
 
@@ -1613,11 +1650,11 @@ Team 4</textarea>
     const nameA = getDisplayName(tournament, match.participantA);
     const nameB = getDisplayName(tournament, match.participantB);
     const recordA = match.complete
-      ? getEntrantRecordAfterMatch(tournament, match.participantA, match.id)
-      : getEntrantRecordBeforeMatch(tournament, match.participantA, match.id);
+      ? (recordTimeline.afterByMatch[match.id]?.[match.participantA] || { wins: 0, losses: 0 })
+      : (recordTimeline.current[match.participantA] || { wins: 0, losses: 0 });
     const recordB = match.complete
-      ? getEntrantRecordAfterMatch(tournament, match.participantB, match.id)
-      : getEntrantRecordBeforeMatch(tournament, match.participantB, match.id);
+      ? (recordTimeline.afterByMatch[match.id]?.[match.participantB] || { wins: 0, losses: 0 })
+      : (recordTimeline.current[match.participantB] || { wins: 0, losses: 0 });
     const ready = !match.complete && !!match.participantA && !!match.participantB;
     const stateLabel = match.complete
       ? (match.autoAdvanced ? 'Bye advance' : 'Complete')
@@ -1671,6 +1708,7 @@ Team 4</textarea>
       els.board.innerHTML = '';
       return;
     }
+    const recordTimeline = buildRecordTimeline(tournament);
 
     const renderRoundColumn = (ids, title, sub) => `
       <div class="round-stack">
@@ -1678,7 +1716,7 @@ Team 4</textarea>
           <div class="round-title">${escapeHtml(title)}</div>
           <div class="round-sub">${escapeHtml(sub)}</div>
         </div>
-        ${ids.map((matchId) => renderMatchCard(getMatch(tournament, matchId))).join('')}
+        ${ids.map((matchId) => renderMatchCard(getMatch(tournament, matchId), recordTimeline)).join('')}
       </div>
     `;
 
