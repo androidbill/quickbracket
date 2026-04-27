@@ -373,6 +373,35 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.slot-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.record-badges {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.record-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.record-badge.wins {
+  background: linear-gradient(180deg, rgba(44,155,99,0.95), rgba(31,122,75,0.95));
+}
+.record-badge.losses {
+  background: linear-gradient(180deg, rgba(232,51,42,0.95), rgba(192,40,31,0.95));
+}
 .slot-score {
   font-size: 13px;
   font-weight: 900;
@@ -597,6 +626,11 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
   }
   .slot-name {
     font-size: 12px;
+  }
+  .record-badge {
+    width: 19px;
+    height: 19px;
+    font-size: 10px;
   }
   .slot-score,
   .match-meta,
@@ -1133,6 +1167,19 @@ Team 4</textarea>
     return losses;
   }
 
+  function getEntrantRecord(tournament, entrantId) {
+    if (!entrantId) return { wins: 0, losses: 0 };
+    let wins = 0;
+    let losses = 0;
+    for (const matchId of getAllMatchIds(tournament)) {
+      const match = getMatch(tournament, matchId);
+      if (!match || !match.complete || match.autoAdvanced) continue;
+      if (match.winnerId === entrantId) wins += 1;
+      if (match.loserId === entrantId) losses += 1;
+    }
+    return { wins, losses };
+  }
+
   function getCompletedWinners(tournament, matchIds) {
     return (matchIds || [])
       .map((matchId) => getMatch(tournament, matchId))
@@ -1528,6 +1575,8 @@ Team 4</textarea>
     const tournament = state.tournament;
     const nameA = getDisplayName(tournament, match.participantA);
     const nameB = getDisplayName(tournament, match.participantB);
+    const recordA = getEntrantRecord(tournament, match.participantA);
+    const recordB = getEntrantRecord(tournament, match.participantB);
     const ready = !match.complete && !!match.participantA && !!match.participantB;
     const stateLabel = match.complete
       ? (match.autoAdvanced ? 'Bye advance' : 'Complete')
@@ -1556,11 +1605,17 @@ Team 4</textarea>
           <div class="match-state">${escapeHtml(stateLabel)}</div>
         </div>
         <div class="slot ${match.winnerId === match.participantA ? 'winner' : ''} ${!match.participantA ? 'empty' : ''}">
-          <div class="slot-name">${escapeHtml(nameA)}</div>
+          <div class="slot-main">
+            <div class="slot-name">${escapeHtml(nameA)}</div>
+            ${match.participantA ? `<div class="record-badges"><span class="record-badge wins" title="Wins">${recordA.wins}</span><span class="record-badge losses" title="Losses">${recordA.losses}</span></div>` : ''}
+          </div>
           <div class="slot-score">${scoreA}</div>
         </div>
         <div class="slot ${match.winnerId === match.participantB ? 'winner' : ''} ${!match.participantB ? 'empty' : ''}">
-          <div class="slot-name">${escapeHtml(nameB)}</div>
+          <div class="slot-main">
+            <div class="slot-name">${escapeHtml(nameB)}</div>
+            ${match.participantB ? `<div class="record-badges"><span class="record-badge wins" title="Wins">${recordB.wins}</span><span class="record-badge losses" title="Losses">${recordB.losses}</span></div>` : ''}
+          </div>
           <div class="slot-score">${scoreB}</div>
         </div>
         <div class="match-meta">${meta}</div>
