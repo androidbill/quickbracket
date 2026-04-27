@@ -1372,13 +1372,11 @@ Team 4</textarea>
     while (changed) {
       changed = false;
 
-      assignDynamicBracketParticipants(tournament);
-
       getAllMatchIds(tournament).forEach((matchId) => {
         const match = matchMap[matchId];
         if (!match || !match.enabled) return;
 
-        if (!match.complete && match.bracket === 'W') {
+        if (match.id !== 'F2' && !match.complete) {
           const nextA = resolveSource(tournament, match.sourceA);
           const nextB = resolveSource(tournament, match.sourceB);
           if (nextA !== UNRESOLVED && match.participantA !== nextA) {
@@ -1398,7 +1396,7 @@ Team 4</textarea>
         const onePresent = (!!a && !b) || (!a && !!b);
         const nonePresent = !a && !b;
 
-        if (!match.complete && readyA && readyB && (onePresent || nonePresent)) {
+        if (match.id !== 'F2' && !match.complete && readyA && readyB && (onePresent || nonePresent)) {
           match.complete = true;
           match.autoAdvanced = true;
           match.winnerId = a || b || null;
