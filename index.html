@@ -1194,6 +1194,23 @@ Team 4</textarea>
     return { wins, losses };
   }
 
+  function getEntrantRecordAfterMatch(tournament, entrantId, stopMatchId) {
+    if (!entrantId) return { wins: 0, losses: 0 };
+    let wins = 0;
+    let losses = 0;
+    for (const matchId of getAllMatchIds(tournament)) {
+      const match = getMatch(tournament, matchId);
+      if (!match || !match.complete || match.autoAdvanced) {
+        if (matchId === stopMatchId) break;
+        continue;
+      }
+      if (match.winnerId === entrantId) wins += 1;
+      if (match.loserId === entrantId) losses += 1;
+      if (matchId === stopMatchId) break;
+    }
+    return { wins, losses };
+  }
+
   function getCompletedWinners(tournament, matchIds) {
     return (matchIds || [])
       .map((matchId) => getMatch(tournament, matchId))
@@ -1589,8 +1606,12 @@ Team 4</textarea>
     const tournament = state.tournament;
     const nameA = getDisplayName(tournament, match.participantA);
     const nameB = getDisplayName(tournament, match.participantB);
-    const recordA = getEntrantRecordBeforeMatch(tournament, match.participantA, match.id);
-    const recordB = getEntrantRecordBeforeMatch(tournament, match.participantB, match.id);
+    const recordA = match.complete
+      ? getEntrantRecordAfterMatch(tournament, match.participantA, match.id)
+      : getEntrantRecordBeforeMatch(tournament, match.participantA, match.id);
+    const recordB = match.complete
+      ? getEntrantRecordAfterMatch(tournament, match.participantB, match.id)
+      : getEntrantRecordBeforeMatch(tournament, match.participantB, match.id);
     const ready = !match.complete && !!match.participantA && !!match.participantB;
     const stateLabel = match.complete
       ? (match.autoAdvanced ? 'Bye advance' : 'Complete')
