@@ -1,14 +1,14 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="108" fill="#0D1B2A"/>
-  <rect x="42" y="42" width="428" height="428" rx="96" fill="#142233" stroke="#25415F" stroke-width="12"/>
-  <path d="M118 136H214V198H118V136Z" fill="#1A6FE8"/>
-  <path d="M298 136H394V198H298V136Z" fill="#E8332A"/>
-  <path d="M118 314H214V376H118V314Z" fill="#E8332A"/>
-  <path d="M298 314H394V376H298V314Z" fill="#1A6FE8"/>
-  <path d="M214 166H256V346H214" stroke="#F2BF43" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M298 166H256V346H298" stroke="#F2BF43" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="256" cy="256" r="44" fill="#F2BF43"/>
-  <path d="M214 256H166" stroke="#F2BF43" stroke-width="26" stroke-linecap="round"/>
-  <path d="M346 256H298" stroke="#F2BF43" stroke-width="26" stroke-linecap="round"/>
-  <text x="256" y="444" text-anchor="middle" fill="#F2BF43" font-size="56" font-family="Arial, Helvetica, sans-serif" font-weight="800">QB</text>
+  <defs>
+    <clipPath id="shape">
+      <rect width="512" height="512" rx="108" fill="white"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#shape)">
+    <rect width="512" height="512" fill="#6B2BBF"/>
+    <polygon points="0,0 512,0 0,512" fill="#F2BF43"/>
+    <path d="M0 512L512 0" stroke="rgba(255,255,255,0.24)" stroke-width="14"/>
+  </g>
+  <rect x="14" y="14" width="484" height="484" rx="94" stroke="rgba(255,255,255,0.14)" stroke-width="12"/>
+  <text x="256" y="304" text-anchor="middle" fill="#FFFFFF" font-size="194" font-family="Arial, Helvetica, sans-serif" font-weight="900" letter-spacing="-10">QB</text>
 </svg>

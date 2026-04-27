@@ -2,7 +2,7 @@
   "name": "QuickBracket",
   "short_name": "QuickBracket",
   "description": "A fast mobile double-elimination tournament app.",
-  "start_url": "./index.html?v=1",
+  "start_url": "./index.html?v=2",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -10,13 +10,13 @@
   "theme_color": "#0d1b2a",
   "icons": [
     {
-      "src": "./quickbracket-icon.svg?v=1",
+      "src": "./quickbracket-icon.svg?v=2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "./quickbracket-icon.svg?v=1",
+      "src": "./quickbracket-icon.svg?v=2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
