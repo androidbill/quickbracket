@@ -1108,6 +1108,18 @@ Team 4</textarea>
     return getMatchMap(tournament)[matchId] || null;
   }
 
+  function countLossesBeforeMatch(tournament, entrantId, stopMatchId = null) {
+    if (!entrantId) return 0;
+    let losses = 0;
+    for (const matchId of getAllMatchIds(tournament)) {
+      if (matchId === stopMatchId) break;
+      const match = getMatch(tournament, matchId);
+      if (!match || !match.complete) continue;
+      if (match.loserId === entrantId) losses += 1;
+    }
+    return losses;
+  }
+
   function resolveSource(tournament, source) {
     if (!source) return null;
     if (source.kind === 'seed') {
@@ -1140,7 +1152,9 @@ Team 4</textarea>
       return;
     }
 
-    if (f1.winnerId && f1.participantA && f1.winnerId === f1.participantA) {
+    const finalLoser = f1.loserId;
+    const lossesBeforeF1 = countLossesBeforeMatch(tournament, finalLoser, 'F1');
+    if (f1.winnerId && lossesBeforeF1 >= 1) {
       tournament.championId = f1.winnerId;
       tournament.finishedAt = new Date().toISOString();
     }
@@ -1199,7 +1213,9 @@ Team 4</textarea>
       const f1 = matchMap.F1;
       const f2 = matchMap.F2;
       if (f1 && f1.complete && f2 && !f2.enabled) {
-        if (f1.winnerId && f1.participantB && f1.winnerId === f1.participantB) {
+        const finalLoser = f1.loserId;
+        const lossesBeforeF1 = countLossesBeforeMatch(tournament, finalLoser, 'F1');
+        if (f1.winnerId && lossesBeforeF1 === 0) {
           f2.enabled = true;
           f2.participantA = f1.participantA;
           f2.participantB = f1.participantB;
