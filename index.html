@@ -78,7 +78,7 @@ input[type="text"], textarea { width: 100%; }
   text-transform: uppercase;
   letter-spacing: 1.4px;
 }
-.icon-btn, .pill, .action-btn, .btn-primary, .btn-secondary, .btn-danger, .slot-btn {
+.icon-btn, .pill, .action-btn, .btn-primary, .btn-secondary, .btn-danger, .slot-btn, .winner-btn, .match-btn {
   min-height: var(--tap);
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -313,12 +313,6 @@ input[type="text"], textarea { width: 100%; }
   background: rgba(0,0,0,0.12);
   border: 1px solid rgba(255,255,255,0.04);
 }
-.slot.ready {
-  cursor: pointer;
-}
-.slot.ready:active {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 28%, rgba(0,0,0,0.12)), rgba(0,0,0,0.16));
-}
 .slot.winner {
   background: linear-gradient(180deg, rgba(242,191,67,0.28), rgba(242,191,67,0.08));
   border-color: rgba(242,191,67,0.24);
@@ -343,6 +337,14 @@ input[type="text"], textarea { width: 100%; }
   font-size: 12px;
   color: rgba(255,255,255,0.72);
   min-height: 18px;
+}
+.match-btn {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 34%, var(--panel-2)), var(--panel-3));
+  color: #fff;
+  font-weight: 900;
+}
+.match-btn:disabled {
+  opacity: 0.45;
 }
 .winner-tag {
   display: inline-flex;
@@ -432,6 +434,22 @@ input[type="text"], textarea { width: 100%; }
   background: var(--panel-2);
   color: var(--text);
   padding: 0 12px;
+}
+.winner-grid {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.winner-btn {
+  padding: 12px;
+  background: rgba(0,0,0,0.14);
+  color: var(--text);
+  text-align: left;
+  font-weight: 800;
+}
+.winner-btn.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 45%, var(--panel-2)), var(--panel-3));
+  border-color: color-mix(in srgb, var(--gold) 40%, var(--border));
 }
 .footer-note {
   text-align: center;
@@ -550,6 +568,31 @@ Team 4</textarea>
   </div>
 </div>
 
+<div class="modal-wrap" id="report-modal-wrap">
+  <div class="modal">
+    <h2 id="report-title">Report Match</h2>
+    <p class="sub" id="report-sub">Pick the winner for this match.</p>
+    <div class="score-row">
+      <div class="score-input">
+        <label class="section-title" id="score-a-label">Side A</label>
+        <input id="score-a-input" type="text" inputmode="numeric" />
+      </div>
+      <div class="score-input">
+        <label class="section-title" id="score-b-label">Side B</label>
+        <input id="score-b-input" type="text" inputmode="numeric" />
+      </div>
+    </div>
+    <div class="winner-grid">
+      <button class="winner-btn" id="winner-a-btn" type="button"></button>
+      <button class="winner-btn" id="winner-b-btn" type="button"></button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="report-modal-wrap" type="button">Cancel</button>
+      <button class="btn-primary" id="save-result-btn" type="button">Save Result</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-wrap" id="about-modal-wrap">
   <div class="modal">
     <h2>QuickBracket</h2>
@@ -590,7 +633,17 @@ Team 4</textarea>
     undoBtn: document.getElementById('undo-btn'),
     restartBtn: document.getElementById('restart-btn'),
     board: document.getElementById('board'),
-    recentResults: document.getElementById('recent-results')
+    recentResults: document.getElementById('recent-results'),
+    reportModalWrap: document.getElementById('report-modal-wrap'),
+    reportTitle: document.getElementById('report-title'),
+    reportSub: document.getElementById('report-sub'),
+    scoreALabel: document.getElementById('score-a-label'),
+    scoreBLabel: document.getElementById('score-b-label'),
+    scoreAInput: document.getElementById('score-a-input'),
+    scoreBInput: document.getElementById('score-b-input'),
+    winnerABtn: document.getElementById('winner-a-btn'),
+    winnerBBtn: document.getElementById('winner-b-btn'),
+    saveResultBtn: document.getElementById('save-result-btn')
   };
 
   function defaultState() {
@@ -600,7 +653,10 @@ Team 4</textarea>
         entrantsText: 'Team 1\nTeam 2\nTeam 3\nTeam 4'
       },
       tournament: null,
-      ui: {}
+      ui: {
+        reportMatchId: null,
+        selectedWinnerId: null
+      }
     };
   }
 
@@ -618,7 +674,10 @@ Team 4</textarea>
           entrantsText: safeText(parsed && parsed.draft && parsed.draft.entrantsText, base.draft.entrantsText)
         },
         tournament: parsed && parsed.tournament ? parsed.tournament : null,
-        ui: {}
+        ui: {
+          reportMatchId: null,
+          selectedWinnerId: null
+        }
       };
     } catch (error) {
       return base;
@@ -997,19 +1056,51 @@ Team 4</textarea>
     return getMatchMap(tournament)[matchId] || null;
   }
 
-  function recordMatchWinner(matchId, winnerId) {
+  function openReportModal(matchId) {
     const tournament = state.tournament;
-    const match = tournament ? getMatch(tournament, matchId) : null;
-    if (!tournament || !match || !winnerId) return;
-    if (match.complete || !match.enabled || !match.participantA || !match.participantB) return;
-    if (winnerId !== match.participantA && winnerId !== match.participantB) return;
+    if (!tournament) return;
+    const match = getMatch(tournament, matchId);
+    if (!match || match.complete || !match.enabled || !match.participantA || !match.participantB) return;
+
+    state.ui.reportMatchId = matchId;
+    state.ui.selectedWinnerId = match.participantA;
+    els.scoreAInput.value = match.scoreA || '';
+    els.scoreBInput.value = match.scoreB || '';
+    renderReportModal();
+    showModal('report-modal-wrap');
+  }
+
+  function renderReportModal() {
+    const tournament = state.tournament;
+    const match = tournament ? getMatch(tournament, state.ui.reportMatchId) : null;
+    if (!tournament || !match) return;
+
+    const nameA = getDisplayName(tournament, match.participantA);
+    const nameB = getDisplayName(tournament, match.participantB);
+    els.reportTitle.textContent = match.title;
+    els.reportSub.textContent = 'Pick the winner for ' + nameA + ' vs ' + nameB + '.';
+    els.scoreALabel.textContent = nameA.toUpperCase();
+    els.scoreBLabel.textContent = nameB.toUpperCase();
+    els.winnerABtn.textContent = nameA;
+    els.winnerBBtn.textContent = nameB;
+    els.winnerABtn.classList.toggle('active', state.ui.selectedWinnerId === match.participantA);
+    els.winnerBBtn.classList.toggle('active', state.ui.selectedWinnerId === match.participantB);
+  }
+
+  function saveResult() {
+    const tournament = state.tournament;
+    const match = tournament ? getMatch(tournament, state.ui.reportMatchId) : null;
+    if (!tournament || !match) return;
+
+    const winnerId = state.ui.selectedWinnerId;
+    if (!winnerId || (winnerId !== match.participantA && winnerId !== match.participantB)) return;
 
     const snapshot = clone(tournament);
     tournament.undoStack = tournament.undoStack || [];
     tournament.undoStack.push(snapshot);
 
-    match.scoreA = '';
-    match.scoreB = '';
+    match.scoreA = safeText(els.scoreAInput.value, '');
+    match.scoreB = safeText(els.scoreBInput.value, '');
     match.complete = true;
     match.autoAdvanced = false;
     match.winnerId = winnerId;
@@ -1024,6 +1115,9 @@ Team 4</textarea>
     });
 
     refreshTournament(tournament);
+    state.ui.reportMatchId = null;
+    state.ui.selectedWinnerId = null;
+    closeModal('report-modal-wrap');
     render();
     persist();
   }
@@ -1034,6 +1128,9 @@ Team 4</textarea>
     const previous = tournament.undoStack.pop();
     state.tournament = previous;
     state.tournament.undoStack = previous.undoStack || [];
+    state.ui.reportMatchId = null;
+    state.ui.selectedWinnerId = null;
+    closeModal('report-modal-wrap');
     render();
     persist();
   }
@@ -1041,6 +1138,8 @@ Team 4</textarea>
   function resetTournament() {
     setState((s) => {
       s.tournament = null;
+      s.ui.reportMatchId = null;
+      s.ui.selectedWinnerId = null;
     });
   }
 
@@ -1056,6 +1155,8 @@ Team 4</textarea>
       s.draft.name = name;
       s.draft.entrantsText = entrants.join('\n');
       s.tournament = createTournament(name, entrants);
+      s.ui.reportMatchId = null;
+      s.ui.selectedWinnerId = null;
     });
   }
 
@@ -1114,7 +1215,7 @@ Team 4</textarea>
     const meta = match.complete
       ? (match.winnerId ? escapeHtml(getDisplayName(tournament, match.winnerId)) + ' advances' : 'Advance recorded')
       : ready
-        ? 'Tap the winning team name'
+        ? 'Tap to report result'
         : 'Waiting for feeder match';
 
     return `
@@ -1123,15 +1224,16 @@ Team 4</textarea>
           <div class="match-label">${escapeHtml(match.id)}</div>
           <div class="match-state">${escapeHtml(stateLabel)}</div>
         </div>
-        <button class="slot ${ready ? 'ready' : ''} ${match.winnerId === match.participantA ? 'winner' : ''} ${!match.participantA ? 'empty' : ''}" type="button" ${ready ? `data-pick-winner="${escapeHtml(match.id)}" data-winner-id="${escapeHtml(match.participantA || '')}"` : 'disabled'}>
+        <div class="slot ${match.winnerId === match.participantA ? 'winner' : ''} ${!match.participantA ? 'empty' : ''}">
           <div class="slot-name">${escapeHtml(nameA)}</div>
           <div class="slot-score">${scoreA}</div>
-        </button>
-        <button class="slot ${ready ? 'ready' : ''} ${match.winnerId === match.participantB ? 'winner' : ''} ${!match.participantB ? 'empty' : ''}" type="button" ${ready ? `data-pick-winner="${escapeHtml(match.id)}" data-winner-id="${escapeHtml(match.participantB || '')}"` : 'disabled'}>
+        </div>
+        <div class="slot ${match.winnerId === match.participantB ? 'winner' : ''} ${!match.participantB ? 'empty' : ''}">
           <div class="slot-name">${escapeHtml(nameB)}</div>
           <div class="slot-score">${scoreB}</div>
-        </button>
+        </div>
         <div class="match-meta">${meta}</div>
+        <button class="match-btn" type="button" data-report-match="${escapeHtml(match.id)}" ${ready ? '' : 'disabled'}>${match.complete ? 'Recorded' : 'Report Match'}</button>
       </div>
     `;
   }
@@ -1201,6 +1303,7 @@ Team 4</textarea>
       renderBoard();
       renderRecentResults();
     }
+    renderReportModal();
   }
 
   els.loadSampleBtn.addEventListener('click', () => {
@@ -1227,9 +1330,9 @@ Team 4</textarea>
   document.addEventListener('click', () => closeMenus());
 
   document.addEventListener('click', (event) => {
-    const winnerPickBtn = event.target.closest('[data-pick-winner]');
-    if (winnerPickBtn) {
-      recordMatchWinner(winnerPickBtn.dataset.pickWinner, winnerPickBtn.dataset.winnerId);
+    const reportBtn = event.target.closest('[data-report-match]');
+    if (reportBtn) {
+      openReportModal(reportBtn.dataset.reportMatch);
       return;
     }
 
@@ -1246,8 +1349,26 @@ Team 4</textarea>
     const closeBtn = event.target.closest('[data-close]');
     if (closeBtn) {
       closeModal(closeBtn.dataset.close);
+      state.ui.reportMatchId = null;
+      state.ui.selectedWinnerId = null;
     }
   });
+
+  els.winnerABtn.addEventListener('click', () => {
+    const match = state.tournament ? getMatch(state.tournament, state.ui.reportMatchId) : null;
+    if (!match) return;
+    state.ui.selectedWinnerId = match.participantA;
+    renderReportModal();
+  });
+
+  els.winnerBBtn.addEventListener('click', () => {
+    const match = state.tournament ? getMatch(state.tournament, state.ui.reportMatchId) : null;
+    if (!match) return;
+    state.ui.selectedWinnerId = match.participantB;
+    renderReportModal();
+  });
+
+  els.saveResultBtn.addEventListener('click', saveResult);
 
   render();
 })();
