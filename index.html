@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta id="viewport-meta" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>QuickBracket</title>
 <meta name="description" content="QuickBracket is a fast mobile double-elimination tournament app." />
 <meta name="theme-color" content="#0d1b2a" />
@@ -655,7 +655,6 @@ Team 4</textarea>
   const UNRESOLVED = '__unresolved__';
 
   const els = {
-    viewportMeta: document.getElementById('viewport-meta'),
     menuBtn: document.getElementById('menu-btn'),
     menuDropdown: document.getElementById('menu-dropdown'),
     setupScreen: document.getElementById('setup-screen'),
@@ -1411,16 +1410,6 @@ Team 4</textarea>
     els.undoBtn.disabled = !Array.isArray(tournament.undoStack) || tournament.undoStack.length === 0;
   }
 
-  function syncViewport() {
-    if (!els.viewportMeta) return;
-    const content = state.screen === 'bracket'
-      ? 'width=1400, maximum-scale=5, user-scalable=yes'
-      : 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes';
-    if (els.viewportMeta.getAttribute('content') !== content) {
-      els.viewportMeta.setAttribute('content', content);
-    }
-  }
-
   function renderScreens() {
     els.setupScreen.classList.toggle('hidden', state.screen !== 'setup');
     els.bracketScreen.classList.toggle('hidden', state.screen !== 'bracket');
@@ -1434,7 +1423,6 @@ Team 4</textarea>
   }
 
   function render() {
-    syncViewport();
     renderScreens();
     renderDraft();
     if (state.tournament && state.screen === 'bracket') {
