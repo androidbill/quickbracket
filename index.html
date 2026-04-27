@@ -660,6 +660,7 @@ input[type="text"], textarea, input[type="number"] { width: 100%; }
     </div>
     <button class="icon-btn" id="menu-btn" type="button">⋮</button>
     <div class="dropdown" id="menu-dropdown">
+      <button data-action="quickcorn">QuickCorn</button>
       <button data-action="new">New Tournament</button>
       <button data-action="archive">Archive</button>
       <button data-action="undo">Undo Last Result</button>
@@ -939,6 +940,10 @@ Team 4</textarea>
 
   function closeMenus() {
     els.menuDropdown.classList.remove('open');
+  }
+
+  function openQuickCornApp() {
+    window.location.href = '../QuickCorn/index.html';
   }
 
   function normalizeBestOf(value) {
@@ -1918,6 +1923,7 @@ Team 4</textarea>
     if (actionBtn) {
       closeMenus();
       const action = actionBtn.dataset.action;
+      if (action === 'quickcorn') openQuickCornApp();
       if (action === 'new') resetTournament();
       if (action === 'archive') setState((s) => { s.screen = 'archive'; });
       if (action === 'undo') undoLastResult();
