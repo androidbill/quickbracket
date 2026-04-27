@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+<meta id="viewport-meta" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>QuickBracket</title>
 <meta name="description" content="QuickBracket is a fast mobile double-elimination tournament app." />
 <meta name="theme-color" content="#0d1b2a" />
@@ -645,6 +645,7 @@ Team 4</textarea>
     winnerBBtn: document.getElementById('winner-b-btn'),
     saveResultBtn: document.getElementById('save-result-btn')
   };
+  const viewportMeta = document.getElementById('viewport-meta');
 
   function defaultState() {
     return {
@@ -1290,12 +1291,23 @@ Team 4</textarea>
     els.bracketScreen.classList.toggle('hidden', !hasTournament);
   }
 
+  function syncViewport() {
+    if (!viewportMeta) return;
+    const content = state.tournament
+      ? 'width=1400, maximum-scale=5, user-scalable=yes'
+      : 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes';
+    if (viewportMeta.getAttribute('content') !== content) {
+      viewportMeta.setAttribute('content', content);
+    }
+  }
+
   function renderDraft() {
     els.tournamentName.value = state.draft.name;
     els.entrantsInput.value = state.draft.entrantsText;
   }
 
   function render() {
+    syncViewport();
     renderScreens();
     renderDraft();
     if (state.tournament) {
