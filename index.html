@@ -925,6 +925,15 @@ Team 4</textarea>
     return size;
   }
 
+  function shuffleList(items) {
+    const out = [...items];
+    for (let index = out.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [out[index], out[swapIndex]] = [out[swapIndex], out[index]];
+    }
+    return out;
+  }
+
   function makeId(prefix, round, index) {
     return prefix + round + '-' + index;
   }
@@ -951,7 +960,8 @@ Team 4</textarea>
   }
 
   function createTournament(name, entrantNames, bestOf) {
-    const entrants = entrantNames.map((entrantName, index) => ({
+    const shuffledNames = shuffleList(entrantNames);
+    const entrants = shuffledNames.map((entrantName, index) => ({
       id: 'E' + (index + 1),
       name: entrantName,
       seed: index + 1
