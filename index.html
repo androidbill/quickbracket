@@ -1158,9 +1158,10 @@ Team 4</textarea>
   function countLossesBeforeMatch(tournament, entrantId, stopMatchId = null) {
     if (!entrantId) return 0;
     let losses = 0;
-    for (const matchId of getAllMatchIds(tournament)) {
-      if (matchId === stopMatchId) break;
-      const match = getMatch(tournament, matchId);
+    for (const item of (tournament.history || [])) {
+      if (item.matchId === stopMatchId) break;
+      if (item.auto) continue;
+      const match = getMatch(tournament, item.matchId);
       if (!match || !match.complete) continue;
       if (match.loserId === entrantId) losses += 1;
     }
@@ -1171,8 +1172,9 @@ Team 4</textarea>
     if (!entrantId) return { wins: 0, losses: 0 };
     let wins = 0;
     let losses = 0;
-    for (const matchId of getAllMatchIds(tournament)) {
-      const match = getMatch(tournament, matchId);
+    for (const item of (tournament.history || [])) {
+      if (item.auto) continue;
+      const match = getMatch(tournament, item.matchId);
       if (!match || !match.complete || match.autoAdvanced) continue;
       if (match.winnerId === entrantId) wins += 1;
       if (match.loserId === entrantId) losses += 1;
@@ -1184,9 +1186,10 @@ Team 4</textarea>
     if (!entrantId) return { wins: 0, losses: 0 };
     let wins = 0;
     let losses = 0;
-    for (const matchId of getAllMatchIds(tournament)) {
-      if (matchId === stopMatchId) break;
-      const match = getMatch(tournament, matchId);
+    for (const item of (tournament.history || [])) {
+      if (item.matchId === stopMatchId) break;
+      if (item.auto) continue;
+      const match = getMatch(tournament, item.matchId);
       if (!match || !match.complete || match.autoAdvanced) continue;
       if (match.winnerId === entrantId) wins += 1;
       if (match.loserId === entrantId) losses += 1;
@@ -1198,7 +1201,12 @@ Team 4</textarea>
     if (!entrantId) return { wins: 0, losses: 0 };
     let wins = 0;
     let losses = 0;
-    for (const matchId of getAllMatchIds(tournament)) {
+    for (const item of (tournament.history || [])) {
+      const matchId = item.matchId;
+      if (item.auto) {
+        if (matchId === stopMatchId) break;
+        continue;
+      }
       const match = getMatch(tournament, matchId);
       if (!match || !match.complete || match.autoAdvanced) {
         if (matchId === stopMatchId) break;
