@@ -1120,6 +1120,112 @@ Team 4</textarea>
     return losses;
   }
 
+  function getCompletedWinners(tournament, matchIds) {
+    return (matchIds || [])
+      .map((matchId) => getMatch(tournament, matchId))
+      .filter((match) => match && match.complete && match.winnerId)
+      .map((match) => match.winnerId);
+  }
+
+  function getCompletedLosers(tournament, matchIds) {
+    return (matchIds || [])
+      .map((matchId) => getMatch(tournament, matchId))
+      .filter((match) => match && match.complete && match.loserId)
+      .map((match) => match.loserId);
+  }
+
+  function setIncompleteMatchParticipants(tournament, matchId, participantA, participantB) {
+    const match = getMatch(tournament, matchId);
+    if (!match || match.complete) return;
+    match.participantA = participantA || null;
+    match.participantB = participantB || null;
+  }
+
+  function assignSequentialPairs(tournament, roundIds, entrants) {
+    (roundIds || []).forEach((matchId, index) => {
+      setIncompleteMatchParticipants(
+        tournament,
+        matchId,
+        entrants[(index * 2)] || null,
+        entrants[(index * 2) + 1] || null
+      );
+    });
+  }
+
+  function assignMajorPairs(tournament, roundIds, leftEntrants, rightEntrants) {
+    (roundIds || []).forEach((matchId, index) => {
+      setIncompleteMatchParticipants(
+        tournament,
+        matchId,
+        leftEntrants[index] || null,
+        rightEntrants[index] || null
+      );
+    });
+  }
+
+  function assignDynamicBracketParticipants(tournament) {
+    const losersOrder = tournament.order.losers || [];
+    const winnersOrder = tournament.order.winners || [];
+
+    [...losersOrder.flat(), 'F1', 'F2'].forEach((matchId) => {
+      const match = getMatch(tournament, matchId);
+      if (match && !match.complete) {
+        match.participantA = null;
+        match.participantB = null;
+      }
+    });
+
+    if (!losersOrder.length) {
+      setIncompleteMatchParticipants(
+        tournament,
+        'F1',
+        getCompletedWinners(tournament, winnersOrder[winnersOrder.length - 1])[0] || null,
+        null
+      );
+      return;
+    }
+
+    assignSequentialPairs(tournament, losersOrder[0], getCompletedLosers(tournament, winnersOrder[0]));
+
+    let losersRoundIndex = 1;
+    let previousLosersRoundIds = losersOrder[0];
+
+    for (let winnerRound = 2; winnerRound <= tournament.rounds; winnerRound += 1) {
+      if (winnerRound > 2 && losersRoundIndex < losersOrder.length) {
+        const minorIds = losersOrder[losersRoundIndex];
+        assignSequentialPairs(tournament, minorIds, getCompletedWinners(tournament, previousLosersRoundIds));
+        previousLosersRoundIds = minorIds;
+        losersRoundIndex += 1;
+      }
+
+      if (losersRoundIndex < losersOrder.length) {
+        const majorIds = losersOrder[losersRoundIndex];
+        assignMajorPairs(
+          tournament,
+          majorIds,
+          getCompletedWinners(tournament, previousLosersRoundIds),
+          getCompletedLosers(tournament, winnersOrder[winnerRound - 1])
+        );
+        previousLosersRoundIds = majorIds;
+        losersRoundIndex += 1;
+      }
+    }
+
+    setIncompleteMatchParticipants(
+      tournament,
+      'F1',
+      getCompletedWinners(tournament, winnersOrder[winnersOrder.length - 1])[0] || null,
+      getCompletedWinners(tournament, previousLosersRoundIds)[0] || null
+    );
+
+    const f1 = getMatch(tournament, 'F1');
+    const f2 = getMatch(tournament, 'F2');
+    if (f2 && !f2.complete && f2.enabled && f1) {
+      f2.participantA = f1.participantA || null;
+      f2.participantB = f1.participantB || null;
+    }
+  }
+
   function resolveSource(tournament, source) {
     if (!source) return null;
     if (source.kind === 'seed') {
@@ -1167,11 +1273,13 @@ Team 4</textarea>
     while (changed) {
       changed = false;
 
+      assignDynamicBracketParticipants(tournament);
+
       getAllMatchIds(tournament).forEach((matchId) => {
         const match = matchMap[matchId];
         if (!match || !match.enabled) return;
 
-        if (!match.complete) {
+        if (!match.complete && match.bracket === 'W') {
           const nextA = resolveSource(tournament, match.sourceA);
           const nextB = resolveSource(tournament, match.sourceB);
           if (nextA !== UNRESOLVED && match.participantA !== nextA) {
